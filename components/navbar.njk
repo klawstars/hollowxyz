@@ -1,0 +1,92 @@
+<nav class="ux-navbar component" data-component-id="navbar">
+  
+  <!-- Logo -->
+  <div class="ux-nav-logo">
+    <a href="{{ '/' | shopUrl }}">
+      <img src="https://i.imgur.com/kZdimki.png" alt="{{ shop.name }}">
+    </a>
+  </div>
+
+  <!-- Left links -->
+  <div class="ux-nav-links">
+    {% for link in global.components.navbar.left_links %}
+    <a href="{{ link.link | shopUrl }}" target="{{ 'blank' if link.new_tab }}" class="ux-nav-link">
+      {{ link.text if link.text else 'New Link' }}
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- Mobile toggle -->
+  <button class="ux-mobile-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#uxMobileNav" aria-expanded="false">
+    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </button>
+
+  <!-- Right buttons -->
+  <div class="ux-nav-buttons">
+
+    {% if not global.components.navbar.hide_currency_selector %}
+      {% if currency_rates_usd | length > 1 %}
+        <div class="currency-selector lg" style="margin: 0;">
+          <select style="background: transparent; border: none; color: rgba(255,255,255,0.7); font-size: 0.75rem; padding: 0.2rem; cursor: pointer; outline: none;">
+            {% for code, rate in currency_rates_usd %}
+              <option value="{{ code }}">{{ currency_symbols[code] }} {{ code | upper }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      {% endif %}
+    {% endif %}
+
+    {% if not global.components.navbar.hide_cart %}
+    <a href="{{ '/cart' | shopUrl }}" class="ux-nav-cart-btn" title="Cart">
+      <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M7 22q-.825 0-1.412-.587T5 20t.588-1.412T7 18t1.413.588T9 20t-.587 1.413T7 22m10 0q-.825 0-1.412-.587T15 20t.588-1.412T17 18t1.413.588T19 20t-.587 1.413T17 22M6.15 6l2.4 5h7l2.75-5zM5.2 4h14.75q.575 0 .875.513t.025 1.037l-3.55 6.4q-.275.5-.737.775T15.55 13H8.1L7 15h11q.425 0 .713.288T19 16t-.288.713T18 17H7q-1.125 0-1.7-.987t-.05-1.963L6.6 11.6L3 4H2q-.425 0-.712-.288T1 3t.288-.712T2 2h1.625q.275 0 .525.15t.375.425zm3.35 7h7z"/>
+      </svg>
+      <template x-if="appCart.countWithQuantities > 0">
+        <span class="ux-cart-badge">
+          <span x-text="appCart.countWithQuantities > 9 ? '9+' : appCart.countWithQuantities"></span>
+        </span>
+      </template>
+    </a>
+    {% endif %}
+
+    {% if not global.components.navbar.hide_customer_dashboard %}
+      {% if shop_customer %}
+        <a href="{{ '/customer/dashboard' | shopUrl }}" class="ux-account-btn">
+          <i class="fa-solid fa-user" style="font-size: 0.8rem;"></i>
+          Dashboard
+        </a>
+      {% else %}
+        <button type="button" data-bs-toggle="modal" data-bs-target="#customer-login-modal" class="ux-account-btn">
+          <i class="fa-solid fa-user" style="font-size: 0.8rem;"></i>
+          Dashboard
+        </button>
+      {% endif %}
+    {% endif %}
+
+    {% for link in global.components.navbar.right_links %}
+      {% set rightText = (link.text if link.text else '') | lower %}
+      {% if rightText != 'get started' %}
+        <a href="{{ link.link | shopUrl }}" target="{{ 'blank' if link.new_tab }}" 
+           {% if link.shape == 'button' %}class="ux-get-started-btn ux-nav-btn"{% else %}class="ux-nav-link-btn"{% endif %}>
+          {{ link.text if link.text else 'New Link' }}
+        </a>
+      {% endif %}
+    {% endfor %}
+
+  </div>
+</nav>
+
+<!-- Mobile nav -->
+<div class="collapse" id="uxMobileNav">
+  <div class="ux-mobile-menu">
+    {% for link in global.components.navbar.left_links %}
+    <a href="{{ link.link | shopUrl }}" target="{{ 'blank' if link.new_tab }}" class="ux-mobile-link">
+      {{ link.text if link.text else 'New Link' }}
+    </a>
+    {% endfor %}
+  </div>
+</div>
