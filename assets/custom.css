@@ -2589,7 +2589,12 @@ footer.footer {
 
   #ux-header {
     padding: 0 0.5rem !important;
-    top: 8px !important;
+    top: env(safe-area-inset-top, 0px) !important;
+  }
+
+  .ux-hero {
+    margin-top: 0 !important;
+    padding-top: calc(5.5rem + env(safe-area-inset-top, 0px)) !important;
   }
 
   .ux-footer {
