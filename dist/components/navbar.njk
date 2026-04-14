@@ -33,12 +33,21 @@
     </div>
 
     <div class="sa-unified-actions">
-      <a href="{{ '/products' | shopUrl }}" class="sa-unified-icon-btn d-none d-sm-inline-flex" aria-label="Search products">
+      <a href="{{ '/products' | shopUrl }}" class="sa-unified-search-link d-none d-sm-inline-flex" aria-label="Search products">
         <i class="fa-solid fa-magnifying-glass"></i>
       </a>
 
       {% if not global.components.navbar.hide_cart %}
-      <a href="{{ '/cart' | shopUrl }}" class="sa-unified-icon-btn" title="Cart" aria-label="Cart">
+      <a href="{{ '/cart' | shopUrl }}" class="sa-unified-cart-link d-none d-sm-inline-flex" title="Cart" aria-label="Cart">
+        <i class="fa-solid fa-cart-shopping"></i>
+        <span class="sa-unified-cart-label">Cart</span>
+        <template x-if="appCart.countWithQuantities > 0">
+          <span class="sa-unified-count">
+            <span x-text="appCart.countWithQuantities > 9 ? '9+' : appCart.countWithQuantities"></span>
+          </span>
+        </template>
+      </a>
+      <a href="{{ '/cart' | shopUrl }}" class="sa-unified-icon-btn d-sm-none" title="Cart" aria-label="Cart">
         <i class="fa-solid fa-cart-shopping"></i>
         <template x-if="appCart.countWithQuantities > 0">
           <span class="sa-unified-count">
@@ -56,12 +65,12 @@
       {% if not global.components.navbar.hide_customer_dashboard %}
         {% if shop_customer %}
           <a href="{{ '/customer/dashboard' | shopUrl }}" class="sa-unified-panel-btn d-none d-md-inline-flex">
-            <span>Customer Panel</span>
+            <span>CustomerPanel</span>
             <i class="fa-solid fa-arrow-right"></i>
           </a>
         {% else %}
           <button type="button" data-bs-toggle="modal" data-bs-target="#customer-login-modal" class="sa-unified-panel-btn d-none d-md-inline-flex">
-            <span>Customer Panel</span>
+            <span>CustomerPanel</span>
             <i class="fa-solid fa-arrow-right"></i>
           </button>
         {% endif %}
@@ -93,12 +102,12 @@
         {% if shop_customer %}
           <a href="{{ '/customer/dashboard' | shopUrl }}" class="sa-unified-mobile-link sa-unified-mobile-panel" @click="mobileOpen = false">
             <i class="fa-solid fa-arrow-right"></i>
-            <span>Customer Panel</span>
+            <span>CustomerPanel</span>
           </a>
         {% else %}
           <button type="button" data-bs-toggle="modal" data-bs-target="#customer-login-modal" class="sa-unified-mobile-link sa-unified-mobile-panel" @click="mobileOpen = false">
             <i class="fa-solid fa-arrow-right"></i>
-            <span>Customer Panel</span>
+            <span>CustomerPanel</span>
           </button>
         {% endif %}
       {% endif %}

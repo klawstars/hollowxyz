@@ -5176,25 +5176,105 @@ footer.footer {
   white-space: nowrap;
 }
 
-/* Remove square containers only for search/cart links */
-.ux-navbar.sa-unified-nav .sa-unified-actions a.sa-unified-icon-btn {
-  width: auto;
-  height: auto;
-  border: 0;
-  background: transparent;
-  border-radius: 0;
-  padding: 0.1rem 0.15rem;
-  color: rgba(255, 255, 255, 0.78);
+/* Desktop polish to match legacy navbar proportions */
+.ux-navbar.sa-unified-nav {
+  max-width: none;
+  width: calc(100% - 1rem);
+  padding: 0.55rem 0 0 !important;
 }
 
-.ux-navbar.sa-unified-nav .sa-unified-actions a.sa-unified-icon-btn:hover {
-  background: transparent;
-  border-color: transparent;
+.sa-unified-shell {
+  height: 54px;
+  padding: 0 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(12, 14, 24, 0.58);
+}
+
+#ux-header.is-scrolled .sa-unified-shell {
+  background: rgba(12, 14, 24, 0.74);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.sa-unified-logo img {
+  height: 48px;
+}
+
+.sa-unified-center {
+  gap: 0.18rem;
+  padding: 0.2rem;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sa-unified-center-link {
+  height: 31px;
+  padding: 0 0.95rem;
+  font-size: 0.82rem;
+  color: rgba(222, 229, 245, 0.72);
+}
+
+.sa-unified-center-link i {
+  font-size: 0.75rem;
+  opacity: 0.92;
+}
+
+.sa-unified-center-link.active {
+  background: linear-gradient(180deg, #ff5e66 0%, #dc313d 100%);
+  box-shadow: 0 8px 18px rgba(220, 49, 61, 0.28);
+}
+
+.sa-unified-center-link:hover {
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.sa-unified-actions {
+  gap: 0.95rem;
+}
+
+.sa-unified-search-link,
+.sa-unified-cart-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  color: rgba(226, 232, 247, 0.8);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+
+.sa-unified-search-link:hover,
+.sa-unified-cart-link:hover {
   color: #fff;
 }
 
-.ux-navbar.sa-unified-nav .sa-unified-actions a.sa-unified-icon-btn i {
-  font-size: 1rem;
+.sa-unified-cart-label {
+  position: relative;
+  top: -0.5px;
+}
+
+.sa-unified-cart-link .sa-unified-count {
+  top: -10px;
+  right: -9px;
+  min-width: 18px;
+  height: 18px;
+  font-size: 0.64rem;
+  background: #ef4048;
+  border-color: rgba(22, 24, 34, 0.95);
+}
+
+.sa-unified-panel-btn {
+  height: 38px;
+  padding: 0 1.12rem;
+  background: linear-gradient(180deg, #ff5e66 0%, #dc313d 100%);
+  box-shadow: 0 10px 20px rgba(220, 49, 61, 0.28);
+  font-size: 0.81rem;
+}
+
+.sa-unified-panel-btn:hover {
+  filter: brightness(1.05);
 }
 
 @media (max-width: 991.98px) {
