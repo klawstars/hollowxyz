@@ -203,6 +203,70 @@ function toApiInternalUrl(value) {
   return text.startsWith("/") ? `/api${text}` : `/api/${text}`;
 }
 
+function parseCookieHeader(cookieHeader) {
+  const header = String(cookieHeader || "");
+  if (!header) {
+    return new Map();
+  }
+
+  const map = new Map();
+  const parts = header.split(";");
+  for (const rawPart of parts) {
+    const part = rawPart.trim();
+    if (!part) {
+      continue;
+    }
+    const eqIndex = part.indexOf("=");
+    if (eqIndex <= 0) {
+      continue;
+    }
+    const name = part.slice(0, eqIndex).trim();
+    const value = part.slice(eqIndex + 1).trim();
+    if (!name) {
+      continue;
+    }
+    try {
+      map.set(name, decodeURIComponent(value));
+    } catch {
+      map.set(name, value);
+    }
+  }
+  return map;
+}
+
+function getCookieValue(req, name) {
+  const cookies = parseCookieHeader(req?.headers?.cookie);
+  return cookies.get(name) || "";
+}
+
+function hasShopCustomerToken(req) {
+  const token = getCookieValue(req, "shop_customer_token");
+  return Boolean(String(token || "").trim());
+}
+
+function getDevCustomerId(req) {
+  const raw = getCookieValue(req, "dev_customer_id");
+  const id = Number(raw);
+  return Number.isFinite(id) && id > 0 ? id : null;
+}
+
+function hasCustomerSession(req) {
+  return hasShopCustomerToken(req) || Boolean(getDevCustomerId(req));
+}
+
+function setCookieHeaderValue(name, value, options = {}) {
+  const parts = [];
+  parts.push(`${name}=${encodeURIComponent(String(value ?? ""))}`);
+  parts.push(`Path=${options.path || "/"}`);
+  if (options.maxAgeSeconds !== undefined && options.maxAgeSeconds !== null) {
+    parts.push(`Max-Age=${Math.max(0, Math.floor(Number(options.maxAgeSeconds)))}`);
+  }
+  if (options.httpOnly) parts.push("HttpOnly");
+  if (options.sameSite) parts.push(`SameSite=${options.sameSite}`);
+  if (options.secure) parts.push("Secure");
+  return parts.join("; ");
+}
+
 function toAssetUrl(value) {
   const text = String(value || "");
   if (!text) {
@@ -1382,7 +1446,27 @@ function resolveTemplate(requestPath) {
   return null;
 }
 
-async function createContext(templateName, routeData) {
+function mapSellAuthCustomerToThemeCustomer(customer) {
+  if (!customer || typeof customer !== "object") {
+    return null;
+  }
+  const toNumber = (value) => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+  };
+  return {
+    id: toNumber(customer.id),
+    email: String(customer.email || ""),
+    balance: toNumber(customer.balance),
+    total_completed: toNumber(customer.total_completed),
+    total_spent_usd: toNumber(customer.total_spent_usd),
+    created_at: customer.created_at ? String(customer.created_at) : new Date().toISOString(),
+    affiliate_code: customer.affiliate_code ? String(customer.affiliate_code) : null,
+    affiliate_referrer_earnings: toNumber(customer.affiliate_referrer_earnings),
+  };
+}
+
+async function createContext(req, templateName, routeData) {
   const settings = currentSettings;
   const templateConfig = settings.templates?.[templateName] || {};
   const sample = createSampleData();
@@ -1410,6 +1494,14 @@ async function createContext(templateName, routeData) {
     affiliate_code: "MYCODE",
     affiliate_referrer_earnings: 12.5,
   };
+  const shouldMockCustomer = String(process.env.MOCK_CUSTOMER || "").trim() === "1";
+  const devCustomerId = getDevCustomerId(req);
+  let devShopCustomer = null;
+  if (!shouldMockCustomer && devCustomerId && SELLAUTH_API_KEY) {
+    devShopCustomer = await fetchSellAuthAdminJson(`/v1/shops/${SELLAUTH_SHOP_ID}/customers/${devCustomerId}`)
+      .then(mapSellAuthCustomerToThemeCustomer)
+      .catch(() => null);
+  }
 
   const availableProducts = ensureArray(source.products).length > 0
     ? ensureArray(source.products)
@@ -1510,8 +1602,8 @@ async function createContext(templateName, routeData) {
       },
     },
     shop: { ...fallbackShop, ...(source.shop || {}) },
-    shop_customer: defaultShopCustomer,
-    customer: defaultShopCustomer,
+    shop_customer: shouldMockCustomer ? defaultShopCustomer : devShopCustomer,
+    customer: shouldMockCustomer ? defaultShopCustomer : devShopCustomer,
     currency: "USD",
     currency_rates_usd: { USD: 1, EUR: 0.92 },
     currency_symbols: { USD: "$", EUR: "EUR" },
@@ -1543,8 +1635,8 @@ async function createContext(templateName, routeData) {
   };
 }
 
-async function renderPage(templateName, routeData = {}) {
-  const context = await createContext(templateName, routeData);
+async function renderPage(req, templateName, routeData = {}) {
+  const context = await createContext(req, templateName, routeData);
   const templatePath = `templates/${templateName}.njk`;
 
   const templateHtml = env.render(templatePath, context);
@@ -1842,8 +1934,90 @@ app.use(
   }
 );
 
+app.post("/dev/customer-login", express.json(), async (req, res) => {
+  try {
+    const secret = String(process.env.DEV_CUSTOMER_LOGIN_SECRET || "").trim();
+    if (!secret) {
+      res.status(501).json({
+        error: "dev_login_not_configured",
+        message: "Set DEV_CUSTOMER_LOGIN_SECRET in .env to use dev customer login.",
+      });
+      return;
+    }
+
+    const provided = String(req.headers["x-dev-secret"] || "").trim();
+    if (!provided || provided !== secret) {
+      res.status(401).json({ error: "unauthorized", message: "Invalid dev secret." });
+      return;
+    }
+
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    if (!email || !email.includes("@")) {
+      res.status(400).json({ error: "invalid_email", message: "Provide a valid email." });
+      return;
+    }
+
+    if (!SELLAUTH_API_KEY || !SELLAUTH_SHOP_ID) {
+      res.status(501).json({
+        error: "sellauth_not_configured",
+        message: "SELLAUTH_API_KEY and SELLAUTH_SHOP_ID must be set for dev login.",
+      });
+      return;
+    }
+
+    const listUrl = `/v1/shops/${SELLAUTH_SHOP_ID}/customers?email=${encodeURIComponent(email)}&perPage=1`;
+    const payload = await fetchSellAuthAdminJson(listUrl).catch(() => null);
+    const first = payload && Array.isArray(payload.data) ? payload.data[0] : null;
+    const mapped = mapSellAuthCustomerToThemeCustomer(first);
+    if (!mapped || !mapped.id) {
+      res.status(404).json({ error: "customer_not_found", message: "Customer not found for this email." });
+      return;
+    }
+
+    const isSecureRequest = Boolean(req.secure || String(req.headers["x-forwarded-proto"] || "").toLowerCase() === "https");
+    res.setHeader(
+      "Set-Cookie",
+      setCookieHeaderValue("dev_customer_id", String(mapped.id), {
+        path: "/",
+        httpOnly: true,
+        sameSite: "Lax",
+        secure: IS_PRODUCTION && isSecureRequest,
+        maxAgeSeconds: 7 * 24 * 60 * 60,
+      })
+    );
+    res.json({ success: true, customer: mapped });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown dev login error";
+    res.status(500).json({ error: "dev_login_failed", message });
+  }
+});
+
+app.post("/dev/customer-logout", (req, res) => {
+  res.setHeader(
+    "Set-Cookie",
+    setCookieHeaderValue("dev_customer_id", "", {
+      path: "/",
+      httpOnly: true,
+      sameSite: "Lax",
+      secure: false,
+      maxAgeSeconds: 0,
+    })
+  );
+  res.json({ success: true });
+});
+
 app.get("*", async (req, res) => {
   currentSettings = loadSettings();
+
+  if (req.path.startsWith("/customer/") && !hasCustomerSession(req)) {
+    const clean = String(req.path || "").replace(/^\/+|\/+$/g, "");
+    const parts = clean.split("/").filter(Boolean);
+    const section = parts[1] || "dashboard";
+    const allowedBack = new Set(["dashboard", "invoices", "tickets", "balance", "affiliate"]);
+    const back = allowedBack.has(section) ? section : "dashboard";
+    res.redirect(`/?login=1&back=${encodeURIComponent(back)}`);
+    return;
+  }
 
   const resolved = resolveTemplate(req.path);
   if (!resolved) {
@@ -1852,7 +2026,7 @@ app.get("*", async (req, res) => {
   }
 
   try {
-    const html = await renderPage(resolved.templateName, resolved.routeData);
+    const html = await renderPage(req, resolved.templateName, resolved.routeData);
     res.send(html);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown server error";

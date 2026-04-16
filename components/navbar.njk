@@ -1,11 +1,16 @@
 {% set isLandingPage = templateName == 'shop' %}
 {% set isProductsPage = templateName == 'products' or templateName == 'product' %}
 {% set isStatusPage = templateName == 'status' %}
-{% set supportHref = ('/customer/tickets' if shop_customer else '/?login=1&back=tickets') | shopUrl %}
+{% set configuredLogoUrl = global.properties.navbar_logo_url %}
+{% set configuredSupportUrl = global.properties.navbar_support_url %}
+{% set configuredCustomerPanelUrl = global.properties.navbar_customer_panel_url %}
+{% set logoHref = (configuredLogoUrl if configuredLogoUrl else '/') | shopUrl %}
+{% set supportHref = (configuredSupportUrl if configuredSupportUrl else ('/customer/tickets' if shop_customer else '/?login=1&back=tickets')) | shopUrl %}
+{% set customerPanelHref = (configuredCustomerPanelUrl if configuredCustomerPanelUrl else '/customer/dashboard') | shopUrl %}
 
 <nav class="ux-navbar component sa-unified-nav" data-component-id="navbar" x-data="{ mobileOpen: false }">
   <div class="sa-unified-shell">
-    <a href="{{ '/' | shopUrl }}" class="sa-unified-logo">
+    <a href="{{ logoHref }}" class="sa-unified-logo">
       {% if shop.image_url %}
         <img src="{{ shop.image_url }}" alt="{{ shop.name }}">
       {% else %}
@@ -54,16 +59,23 @@
       </button>
 
       {% if not global.components.navbar.hide_customer_dashboard %}
-        {% if shop_customer %}
-          <a href="{{ '/customer/dashboard' | shopUrl }}" class="sa-unified-panel-btn d-none d-md-inline-flex">
+        {% if configuredCustomerPanelUrl %}
+          <a href="{{ customerPanelHref }}" class="sa-unified-panel-btn d-none d-md-inline-flex">
             <span>Customer Panel</span>
             <i class="fa-solid fa-arrow-right"></i>
           </a>
         {% else %}
-          <button type="button" data-bs-toggle="modal" data-bs-target="#customer-login-modal" class="sa-unified-panel-btn d-none d-md-inline-flex">
-            <span>Customer Panel</span>
-            <i class="fa-solid fa-arrow-right"></i>
-          </button>
+          {% if shop_customer %}
+            <a href="{{ customerPanelHref }}" class="sa-unified-panel-btn d-none d-md-inline-flex">
+              <span>Customer Panel</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </a>
+          {% else %}
+            <button type="button" data-bs-toggle="modal" data-bs-target="#customer-login-modal" class="sa-unified-panel-btn d-none d-md-inline-flex">
+              <span>Customer Panel</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          {% endif %}
         {% endif %}
       {% endif %}
     </div>
@@ -90,16 +102,23 @@
 
       {% if not global.components.navbar.hide_customer_dashboard %}
       <div class="sa-unified-mobile-sep"></div>
-        {% if shop_customer %}
-          <a href="{{ '/customer/dashboard' | shopUrl }}" class="sa-unified-mobile-link sa-unified-mobile-panel" @click="mobileOpen = false">
+        {% if configuredCustomerPanelUrl %}
+          <a href="{{ customerPanelHref }}" class="sa-unified-mobile-link sa-unified-mobile-panel" @click="mobileOpen = false">
             <i class="fa-solid fa-arrow-right"></i>
             <span>Customer Panel</span>
           </a>
         {% else %}
-          <button type="button" data-bs-toggle="modal" data-bs-target="#customer-login-modal" class="sa-unified-mobile-link sa-unified-mobile-panel" @click="mobileOpen = false">
-            <i class="fa-solid fa-arrow-right"></i>
-            <span>Customer Panel</span>
-          </button>
+          {% if shop_customer %}
+            <a href="{{ customerPanelHref }}" class="sa-unified-mobile-link sa-unified-mobile-panel" @click="mobileOpen = false">
+              <i class="fa-solid fa-arrow-right"></i>
+              <span>Customer Panel</span>
+            </a>
+          {% else %}
+            <button type="button" data-bs-toggle="modal" data-bs-target="#customer-login-modal" class="sa-unified-mobile-link sa-unified-mobile-panel" @click="mobileOpen = false">
+              <i class="fa-solid fa-arrow-right"></i>
+              <span>Customer Panel</span>
+            </button>
+          {% endif %}
         {% endif %}
       {% endif %}
     </div>

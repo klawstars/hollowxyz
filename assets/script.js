@@ -209,7 +209,13 @@ document.addEventListener('alpine:init', () => {
             })
           });
   
-          const data = await response.json();
+          const rawText = await response.text();
+          let data = null;
+          try {
+            data = rawText ? JSON.parse(rawText) : {};
+          } catch {
+            data = { success: false, message: rawText };
+          }
   
           if (data.success) {
             this.modalStep = 2;
@@ -217,7 +223,11 @@ document.addEventListener('alpine:init', () => {
               window.alpineApp.$refs['appCustomer.modalOtpInputs[0]'].focus();
             }, 10);
           } else {
-            this.modalEmailError = data?.message || 'Failed to send OTP. Please try again.';
+            const statusHint = response && typeof response.status === 'number' ? `HTTP ${response.status}. ` : '';
+            const message = (data && typeof data.message === 'string' && data.message.trim())
+              ? data.message.trim()
+              : (rawText && rawText.trim() ? rawText.trim().slice(0, 200) : '');
+            this.modalEmailError = `${statusHint}${message || 'Failed to send OTP. Please try again.'}`;
           }
         } catch (error) {
           this.modalEmailError = 'Network error. Please try again.';
@@ -296,13 +306,23 @@ document.addEventListener('alpine:init', () => {
             body: JSON.stringify(formData)
           });
   
-          const data = await response.json();
+          const rawText = await response.text();
+          let data = null;
+          try {
+            data = rawText ? JSON.parse(rawText) : {};
+          } catch {
+            data = { message: rawText };
+          }
   
           if (data.token) {
             Cookies.set('shop_customer_token', data.token, this.getTokenCookieOptions(7));
             window.location.href = this.afterLoginPath || '/customer/dashboard';
           } else {
-            this.modalOtpError = data?.message || 'Invalid credentials.';
+            const statusHint = response && typeof response.status === 'number' ? `HTTP ${response.status}. ` : '';
+            const message = (data && typeof data.message === 'string' && data.message.trim())
+              ? data.message.trim()
+              : (rawText && rawText.trim() ? rawText.trim().slice(0, 200) : '');
+            this.modalOtpError = `${statusHint}${message || 'Invalid credentials.'}`;
           }
         } catch (error) {
           console.error(error);
