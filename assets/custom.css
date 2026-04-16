@@ -237,12 +237,19 @@ header.sticky-top {
 .sa-unified-mobile {
   position: fixed;
   inset: 0;
-  z-index: 2050;
-  background: rgba(0, 0, 0, 0.95);
+  /* Au-dessus du header (2000) ; téléporté sur <body> pour éviter le bug “fixed” dans un parent avec backdrop-filter */
+  z-index: 2100;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: rgb(7, 8, 18);
+  background: rgba(7, 8, 18, 0.98);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   padding: 6rem 1.5rem 1.5rem;
+  padding-top: calc(6rem + env(safe-area-inset-top, 0px));
   animation: mobileSlideIn 0.3s ease forwards;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 @keyframes mobileSlideIn {
