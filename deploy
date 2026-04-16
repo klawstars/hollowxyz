@@ -1,0 +1,6 @@
+ssh root@87.106.171.154
+cd /var/www/hollowxyz
+git pull origin main
+npm ci
+npm run build
+pm2 restart hollowxyz
